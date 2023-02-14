@@ -1,0 +1,22 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "@google-cloud/storage": "^6.8.0",
+    "firebase-admin": "^11.4.1",
+    "firebase-functions": "^4.1.1",
+    "puppeteer": "^19.4.1"
+  }
+}

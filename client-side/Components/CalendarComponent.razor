@@ -1,0 +1,180 @@
+@using System;
+@using Google.Cloud.Firestore;
+@using congenial_octo_spork.Interfaces;
+@using congenial_octo_spork.Models;
+@inject IFirestoreDataAccess IFirestoreDataAccess;
+
+
+
+<div class="col-md-4 offset-md-4">
+    <RadzenCard>
+        <RadzenDatePicker TValue="DateTime?" Inline="true" Change="@(args => OnChange(args, "Calendar", "MM/dd/yyyy"))"
+                          Max="DateTime.Now" Min="startDate" @bind-Value=@SelectedDate />
+    </RadzenCard>
+</div>
+
+<div class="lightbox">
+    <div class="row">
+        <div class="col-lg-6">
+            @if (IsLoading)
+            {
+                <div class="spinner"></div>
+            }
+            else
+            {
+                <div class="screenshots">
+                    <img src="@ImageUrlCnn"
+                     alt="Coconut with Strawberries"
+                     class="w-100 shadow-1-strong rounded" />
+                </div>
+            }
+
+        </div>
+        <div class="col-lg-6">
+
+            @if (IsLoading)
+            {
+                <div class="spinner"></div>
+            }
+            else
+            {
+                <div class="screenshots">
+                    <img src="@ImageUrlFox"
+                     alt="Dark Roast Iced Coffee"
+                     class="w-100 shadow-1-strong rounded" />
+                </div>
+            }
+
+
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    private string MaxDate => DateTime.Now.ToString("yyyy, MM, dd");
+
+    DateTime? SelectedDate = DateTime.Now;
+
+
+    public string ImageUrlCnn
+    {
+        get
+        {
+            return _imageCnnUrl;
+        }
+
+        set
+        {
+            _imageCnnUrl = value;
+        }
+    }
+
+
+    public string ImageUrlFox
+    {
+        get
+        {
+            return _imageFoxUrl;
+        }
+        set
+        {
+            _imageFoxUrl = value;
+        }
+    }
+
+
+    public bool IsLoading
+    {
+        get
+        {
+            return _isLoading;
+        }
+
+        set
+        {
+            _isLoading = value;
+        }
+    }
+
+    // scrapping data started on January 15 2023
+    private DateTime startDate => Convert.ToDateTime("2023-01-15");
+
+
+    async void OnChange(DateTime? value, string name, string format)
+    {
+        try
+        {
+            IsLoading = true;
+            if (value is not null)
+            {
+                DateTime dateTime = (DateTime)value;
+                DateTime dateUTC = dateTime.ToUniversalTime();
+                Timestamp timestamp = Timestamp.FromDateTime(dateUTC);
+                var endDate = dateUTC.AddDays(1);
+                var startDate = dateUTC.AddDays(-1);
+                Timestamp endTimeStamp = Timestamp.FromDateTime(endDate);
+                Timestamp startTimeStamp = Timestamp.FromDateTime(startDate);
+
+                ImageData imageData = await IFirestoreDataAccess.GetImageDataAsync(timestamp, startTimeStamp, "Cnn", endTimeStamp);
+
+                if (imageData is not null)
+                {
+                    ImageUrlCnn = imageData.imageUrl;
+                }
+
+                ImageData imageData1 = await IFirestoreDataAccess.GetImageDataAsync(timestamp, startTimeStamp, "FoxNews", endTimeStamp);
+
+                if (imageData1 is not null)
+                {
+                    ImageUrlFox = imageData1.imageUrl;
+                }
+
+            }
+        }
+        catch (Exception e)
+        {
+            System.Console.Error.WriteLine(e.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            IsLoading = true;
+            DateTime dateTime = DateTime.Now;
+            DateTime dateUTC = dateTime.ToUniversalTime();
+            var newDate = dateUTC.AddDays(-1);
+            Timestamp timestamp = Timestamp.FromDateTime(newDate);
+
+            ImageData imageData = await IFirestoreDataAccess.GetTodayImageDataAsync(timestamp, "Cnn");
+
+            if (imageData is not null)
+            {
+                ImageUrlCnn = imageData.imageUrl;
+            }
+
+            ImageData imageData1 = await IFirestoreDataAccess.GetTodayImageDataAsync(timestamp, "FoxNews");
+
+            if (imageData1 is not null)
+            {
+                ImageUrlFox = imageData1.imageUrl;
+            }
+
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string _imageCnnUrl = "";
+    private string _imageFoxUrl = "";
+    private bool _isLoading;
+}
